@@ -237,6 +237,11 @@ class Tapper:
 
                     taps = randint(a=settings.RANDOM_TAPS_COUNT[0], b=settings.RANDOM_TAPS_COUNT[1])
 
+                    game_data = await self.get_game_data(http_client=http_client)
+
+                    available_energy = game_data['coinPoolLeftCount']
+                    coins_by_tap = game_data['singleCoinValue']
+
                     if active_turbo:
                         taps += settings.ADD_TAPS_ON_TURBO
                         status = await self.send_taps_with_turbo(http_client=http_client, taps=taps)
@@ -245,6 +250,9 @@ class Tapper:
                             active_turbo = False
                             turbo_time = 0
                     else:
+                        if taps * coins_by_tap >= available_energy:
+                            taps = abs(available_energy // 10 - 1)
+
                         status = await self.send_taps(http_client=http_client, taps=taps)
 
                     profile_data = await self.get_profile_data(http_client=http_client)
@@ -259,10 +267,6 @@ class Tapper:
 
                     logger.success(f"{self.session_name} | Successful tapped! | "
                                    f"Balance: <c>{balance}</c> (<g>+{calc_taps}</g>) | Total: <e>{total}</e>")
-
-                    game_data = await self.get_game_data(http_client=http_client)
-
-                    available_energy = game_data['coinPoolLeftCount']
 
                     boosts_info = await self.get_boosts_info(http_client=http_client)
 
