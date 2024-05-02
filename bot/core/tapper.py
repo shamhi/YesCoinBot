@@ -173,6 +173,8 @@ class Tapper:
             response.raise_for_status()
 
             response_json = await response.json()
+            if response_json['data'] is None:
+                return False
             status = response_json['data']['collectStatus']
 
             return status
