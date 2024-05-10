@@ -7,20 +7,25 @@ import aiohttp
 from aiohttp_proxy import ProxyConnector
 from better_proxy import Proxy
 from pyrogram import Client
+from pyrogram.types import User
 from pyrogram.errors import Unauthorized, UserDeactivated, AuthKeyUnregistered
 from pyrogram.raw.functions.messages import RequestAppWebView
 from pyrogram.raw.types import InputBotAppShortName
+from sqlalchemy.ext.asyncio import async_sessionmaker
 
 from bot.config import settings
 from bot.utils import logger
 from bot.exceptions import InvalidSession
+from db.functions import get_user_proxy, get_user_agent, save_log
 from .headers import headers
 
 
 class Tapper:
-    def __init__(self, tg_client: Client):
+    def __init__(self, tg_client: Client, db_pool: async_sessionmaker, user_data: User):
         self.session_name = tg_client.name
         self.tg_client = tg_client
+        self.db_pool = db_pool
+        self.user_data = user_data
 
     async def get_tg_web_data(self, proxy: str | None) -> str:
         if proxy:
@@ -210,6 +215,9 @@ class Tapper:
 
         proxy_conn = ProxyConnector().from_url(proxy) if proxy else None
 
+        user_agent = await get_user_agent(db_pool=self.db_pool, phone_number=self.user_data.phone_number)
+        headers['User-Agent'] = user_agent
+
         async with aiohttp.ClientSession(headers=headers, connector=proxy_conn) as http_client:
             if proxy:
                 await self.check_proxy(http_client=http_client, proxy=proxy)
@@ -258,6 +266,12 @@ class Tapper:
                     profile_data = await self.get_profile_data(http_client=http_client)
 
                     if not profile_data or not status:
+                        await save_log(
+                            db_pool=self.db_pool,
+                            phone=self.user_data.phone_number,
+                            status="ERROR",
+                            amount=balance,
+                        )
                         continue
 
                     new_balance = profile_data['currentAmount']
@@ -267,6 +281,13 @@ class Tapper:
 
                     logger.success(f"{self.session_name} | Successful tapped! | "
                                    f"Balance: <c>{balance}</c> (<g>+{calc_taps}</g>) | Total: <e>{total}</e>")
+
+                    await save_log(
+                        db_pool=self.db_pool,
+                        phone=self.user_data.phone_number,
+                        status="TAP",
+                        amount=balance,
+                    )
 
                     boosts_info = await self.get_boosts_info(http_client=http_client)
 
@@ -292,6 +313,13 @@ class Tapper:
                             if status is True:
                                 logger.success(f"{self.session_name} | Energy boost applied")
 
+                                await save_log(
+                                    db_pool=self.db_pool,
+                                    phone=self.user_data.phone_number,
+                                    status="APPLY ENERGY BOOST",
+                                    amount=balance,
+                                )
+
                                 await asyncio.sleep(delay=1)
 
                             continue
@@ -303,6 +331,13 @@ class Tapper:
                             status = await self.apply_turbo_boost(http_client=http_client)
                             if status is True:
                                 logger.success(f"{self.session_name} | Turbo boost applied")
+
+                                await save_log(
+                                    db_pool=self.db_pool,
+                                    phone=self.user_data.phone_number,
+                                    status="APPLY TURBO BOOST",
+                                    amount=balance,
+                                )
 
                                 await asyncio.sleep(delay=1)
 
@@ -321,6 +356,13 @@ class Tapper:
                             if status is True:
                                 logger.success(f"{self.session_name} | Tap upgraded to {next_tap_level} lvl")
 
+                                await save_log(
+                                    db_pool=self.db_pool,
+                                    phone=self.user_data.phone_number,
+                                    status="UPGRADE TAP",
+                                    amount=balance,
+                                )
+
                                 await asyncio.sleep(delay=1)
 
                             continue
@@ -336,6 +378,13 @@ class Tapper:
                             if status is True:
                                 logger.success(f"{self.session_name} | Energy upgraded to {next_energy_level} lvl")
 
+                                await save_log(
+                                    db_pool=self.db_pool,
+                                    phone=self.user_data.phone_number,
+                                    status="UPGRADE ENERGY",
+                                    amount=balance,
+                                )
+
                                 await asyncio.sleep(delay=1)
 
                             continue
@@ -350,6 +399,13 @@ class Tapper:
                             status = await self.level_up(http_client=http_client, boost_id=2)
                             if status is True:
                                 logger.success(f"{self.session_name} | Charge upgraded to {next_charge_level} lvl")
+
+                                await save_log(
+                                    db_pool=self.db_pool,
+                                    phone=self.user_data.phone_number,
+                                    status="UPGRADE CHARGE",
+                                    amount=balance,
+                                )
 
                                 await asyncio.sleep(delay=1)
 
@@ -380,8 +436,15 @@ class Tapper:
                     await asyncio.sleep(delay=sleep_between_clicks)
 
 
-async def run_tapper(tg_client: Client, proxy: str | None):
+async def run_tapper(tg_client: Client, db_pool: async_sessionmaker):
     try:
-        await Tapper(tg_client=tg_client).run(proxy=proxy)
+        async with tg_client:
+            user_data = await tg_client.get_me()
+
+        proxy = None
+        if settings.USE_PROXY_FROM_DB:
+            proxy = await get_user_proxy(db_pool=db_pool, phone_number=user_data.phone_number)
+
+        await Tapper(tg_client=tg_client, db_pool=db_pool, user_data=user_data).run(proxy=proxy)
     except InvalidSession:
         logger.error(f"{tg_client.name} | Invalid Session")
