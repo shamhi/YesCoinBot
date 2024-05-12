@@ -125,6 +125,19 @@ class Tapper:
             logger.error(f"{self.session_name} | Unknown error while getting Boosts Info: {error}")
             await asyncio.sleep(delay=3)
 
+    async def get_special_box_info(self, http_client: aiohttp.ClientSession):
+        try:
+            response = await http_client.get(url='https://api.yescoin.gold/game/getSpecialBoxInfo')
+            response.raise_for_status()
+
+            response_json = await response.json()
+            special_box_info = response_json['data']
+
+            return special_box_info
+        except Exception as error:
+            logger.error(f"{self.session_name} | Unknown error while getting Special Box Info: {error}")
+            await asyncio.sleep(delay=3)
+
     async def level_up(self, http_client: aiohttp.ClientSession, boost_id: int) -> bool:
         try:
             response = await http_client.post(url='https://api.yescoin.gold/build/levelUp', json=boost_id)
@@ -180,10 +193,14 @@ class Tapper:
             logger.error(f"{self.session_name} | Unknown error when Tapping: {error}")
             await asyncio.sleep(delay=3)
 
-    async def send_taps_with_turbo(self, http_client: aiohttp.ClientSession, taps: int) -> bool:
+    async def send_taps_with_turbo(self, http_client: aiohttp.ClientSession) -> bool:
         try:
+            special_box_info = await self.get_special_box_info(http_client=http_client)
+            box_type = special_box_info['recoveryBox']['boxType']
+            taps = special_box_info['recoveryBox']['specialBoxTotalCount']
+
             response = await http_client.post(url='https://api.yescoin.gold/game/collectSpecialBoxCoin',
-                                              json={'boxType': 2, 'coinCount': taps})
+                                              json={'boxType': box_type, 'coinCount': taps})
             response.raise_for_status()
 
             response_json = await response.json()
@@ -243,8 +260,8 @@ class Tapper:
                     coins_by_tap = game_data['singleCoinValue']
 
                     if active_turbo:
-                        taps += settings.ADD_TAPS_ON_TURBO
-                        status = await self.send_taps_with_turbo(http_client=http_client, taps=taps)
+                        # taps += settings.ADD_TAPS_ON_TURBO
+                        status = await self.send_taps_with_turbo(http_client=http_client)
 
                         if time() - turbo_time > 20:
                             active_turbo = False
