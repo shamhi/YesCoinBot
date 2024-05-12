@@ -186,8 +186,10 @@ class Tapper:
             response.raise_for_status()
 
             response_json = await response.json()
-            if response_json['data'] is None:
+
+            if not response_json['data']:
                 return False
+
             status = response_json['data']['collectStatus']
 
             return status
@@ -206,7 +208,10 @@ class Tapper:
             response.raise_for_status()
 
             response_json = await response.json()
-            print(response_json)
+
+            if not response_json['data']:
+                return False
+
             status = response_json['data']['collectStatus']
 
             return status
@@ -224,7 +229,6 @@ class Tapper:
 
     async def run(self, proxy: str | None) -> None:
         access_token_created_time = 0
-        turbo_time = 0
         active_turbo = False
 
         proxy_conn = ProxyConnector().from_url(proxy) if proxy else None
@@ -264,10 +268,6 @@ class Tapper:
                     if active_turbo:
                         # taps += settings.ADD_TAPS_ON_TURBO
                         status = await self.send_taps_with_turbo(http_client=http_client)
-
-                        if time() - turbo_time > 20:
-                            active_turbo = False
-                            turbo_time = 0
                     else:
                         if taps * coins_by_tap >= available_energy:
                             taps = abs(available_energy // 10 - 1)
@@ -280,7 +280,7 @@ class Tapper:
                         continue
 
                     new_balance = profile_data['currentAmount']
-                    calc_taps = abs(new_balance - balance)
+                    calc_taps = new_balance - balance
                     balance = new_balance
                     total = profile_data['totalAmount']
 
@@ -393,7 +393,7 @@ class Tapper:
                     sleep_between_clicks = randint(a=settings.SLEEP_BETWEEN_TAP[0], b=settings.SLEEP_BETWEEN_TAP[1])
 
                     if active_turbo is True:
-                        sleep_between_clicks = 4
+                        active_turbo = False
 
                     logger.info(f"Sleep {sleep_between_clicks}s")
                     await asyncio.sleep(delay=sleep_between_clicks)
