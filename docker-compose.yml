@@ -1,7 +1,7 @@
 version: '3'
 services:
   bot:
-    container_name: 'TapSwapBot'
+    container_name: 'YesCoinBot'
     build:
       context: .
     stop_signal: SIGINT
