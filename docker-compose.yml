@@ -1,7 +1,7 @@
 version: '3'
 services:
   bot:
-    container_name: 'YesCoinBot'
+    container_name: 'YsCoinBot'
     build:
       context: .
     stop_signal: SIGINT
