@@ -75,7 +75,7 @@ class Tapper:
 
     async def login(self, http_client: aiohttp.ClientSession, tg_web_data: str) -> tuple[dict[str], str]:
         try:
-            response = await http_client.post(url='https://api.yescoin.gold/user/login', json={"code": tg_web_data})
+            response = await http_client.post(url='https://api-backend.yescoin.gold/user/login', json={"code": tg_web_data})
             response.raise_for_status()
 
             response_json = await response.json()
@@ -88,7 +88,7 @@ class Tapper:
 
     async def get_profile_data(self, http_client: aiohttp.ClientSession):
         try:
-            response = await http_client.get(url='https://api.yescoin.gold/account/getAccountInfo')
+            response = await http_client.get(url='https://api-backend.yescoin.gold/account/getAccountInfo')
             response.raise_for_status()
 
             response_json = await response.json()
@@ -101,7 +101,7 @@ class Tapper:
 
     async def get_game_data(self, http_client: aiohttp.ClientSession):
         try:
-            response = await http_client.get(url='https://api.yescoin.gold/game/getGameInfo')
+            response = await http_client.get(url='https://api-backend.yescoin.gold/game/getGameInfo')
             response.raise_for_status()
 
             response_json = await response.json()
@@ -114,7 +114,7 @@ class Tapper:
 
     async def get_boosts_info(self, http_client: aiohttp.ClientSession):
         try:
-            response = await http_client.get(url='https://api.yescoin.gold/build/getAccountBuildInfo')
+            response = await http_client.get(url='https://api-backend.yescoin.gold/build/getAccountBuildInfo')
             response.raise_for_status()
 
             response_json = await response.json()
@@ -127,7 +127,7 @@ class Tapper:
 
     async def get_special_box_info(self, http_client: aiohttp.ClientSession):
         try:
-            response = await http_client.get(url='https://api.yescoin.gold/game/getSpecialBoxInfo')
+            response = await http_client.get(url='https://api-backend.yescoin.gold/game/getSpecialBoxInfo')
             response.raise_for_status()
 
             response_json = await response.json()
@@ -140,7 +140,7 @@ class Tapper:
 
     async def level_up(self, http_client: aiohttp.ClientSession, boost_id: int) -> bool:
         try:
-            response = await http_client.post(url='https://api.yescoin.gold/build/levelUp', json=boost_id)
+            response = await http_client.post(url='https://api-backend.yescoin.gold/build/levelUp', json=boost_id)
             response.raise_for_status()
 
             response_json = await response.json()
@@ -154,7 +154,7 @@ class Tapper:
 
     async def apply_turbo_boost(self, http_client: aiohttp.ClientSession):
         try:
-            response = await http_client.post(url='https://api.yescoin.gold/game/recoverSpecialBox')
+            response = await http_client.post(url='https://api-backend.yescoin.gold/game/recoverSpecialBox')
             response.raise_for_status()
 
             response_json = await response.json()
@@ -168,7 +168,7 @@ class Tapper:
 
     async def apply_energy_boost(self, http_client: aiohttp.ClientSession):
         try:
-            response = await http_client.post(url='https://api.yescoin.gold/game/recoverCoinPool')
+            response = await http_client.post(url='https://api-backend.yescoin.gold/game/recoverCoinPool')
             response.raise_for_status()
 
             response_json = await response.json()
@@ -182,7 +182,7 @@ class Tapper:
 
     async def send_taps(self, http_client: aiohttp.ClientSession, taps: int) -> bool:
         try:
-            response = await http_client.post(url='https://api.yescoin.gold/game/collectCoin', json=taps)
+            response = await http_client.post(url='https://api-backend.yescoin.gold/game/collectCoin', json=taps)
             response.raise_for_status()
 
             response_json = await response.json()
@@ -203,7 +203,7 @@ class Tapper:
             box_type = special_box_info['recoveryBox']['boxType']
             taps = special_box_info['recoveryBox']['specialBoxTotalCount']
 
-            response = await http_client.post(url='https://api.yescoin.gold/game/collectSpecialBoxCoin',
+            response = await http_client.post(url='https://api-backend.yescoin.gold/game/collectSpecialBoxCoin',
                                               json={'boxType': box_type, 'coinCount': taps})
             response.raise_for_status()
 
