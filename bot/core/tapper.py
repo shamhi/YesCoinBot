@@ -75,7 +75,8 @@ class Tapper:
 
     async def login(self, http_client: aiohttp.ClientSession, tg_web_data: str) -> tuple[dict[str], str]:
         try:
-            response = await http_client.post(url='https://api-backend.yescoin.gold/user/login', json={"code": tg_web_data})
+            response = await http_client.post(url='https://api-backend.yescoin.gold/user/login',
+                                              json={"code": tg_web_data})
             response.raise_for_status()
 
             response_json = await response.json()
@@ -202,6 +203,8 @@ class Tapper:
             special_box_info = await self.get_special_box_info(http_client=http_client)
             box_type = special_box_info['recoveryBox']['boxType']
             taps = special_box_info['recoveryBox']['specialBoxTotalCount']
+
+            await asyncio.sleep(delay=10)
 
             response = await http_client.post(url='https://api-backend.yescoin.gold/game/collectSpecialBoxCoin',
                                               json={'boxType': box_type, 'coinCount': taps})
